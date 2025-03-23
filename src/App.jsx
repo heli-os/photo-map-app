@@ -287,18 +287,7 @@ function ClusterManager({ photos, onPhotoClick, onClusterClick }) {
                 }
               }
             }}
-          >
-            <Popup>
-              <div className="flex flex-col items-center">
-                <img 
-                  src={marker.photoUrl} 
-                  alt="Photo" 
-                  className="w-full max-w-sm h-auto mb-2 cursor-pointer"
-                  onClick={() => onPhotoClick && marker.photo && onPhotoClick([marker.photo], 0)}
-                />
-              </div>
-            </Popup>
-          </Marker>
+          />
         )
       ))}
     </>
@@ -311,34 +300,57 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [gallery, setGallery] = useState(null);
   
+  const [loadingProgress, setLoadingProgress] = useState({ processed: 0, total: 0 });
+  
   const handleFileUpload = async (event) => {
     setIsLoading(true);
     const files = event.target.files;
     
+    // 파일 처리 큐를 사용하여 대량의 파일을 효율적으로 처리
+    const queue = Array.from(files).filter(file => file.type.startsWith('image/'));
     const newPhotos = [];
     let processedCount = 0;
+    const totalFiles = queue.length;
     
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (!file.type.startsWith('image/')) continue;
+    setLoadingProgress({ processed: 0, total: totalFiles });
+    
+    // 파일 처리를 작은 배치로 나누어 UI 차단 방지
+    const processBatch = async (startIdx, batchSize) => {
+      const endIdx = Math.min(startIdx + batchSize, totalFiles);
+      const promises = [];
       
-      try {
-        const photoData = await processPhoto(file);
-        if (photoData) {
-          newPhotos.push(photoData);
-        }
-      } catch (error) {
-        console.error('Error processing photo:', error);
+      for (let i = startIdx; i < endIdx; i++) {
+        const file = queue[i];
+        promises.push(processPhoto(file));
       }
       
-      processedCount++;
-      if (processedCount === files.length) {
+      const results = await Promise.allSettled(promises);
+      results.forEach(result => {
+        if (result.status === 'fulfilled' && result.value) {
+          newPhotos.push(result.value);
+        }
+      });
+      
+      processedCount += promises.length;
+      setLoadingProgress({ processed: processedCount, total: totalFiles });
+      
+      // 진행 상황 업데이트
+      if (processedCount < totalFiles) {
+        // 다음 배치 처리 전에 UI 업데이트 시간 부여
+        setTimeout(() => {
+          processBatch(endIdx, batchSize);
+        }, 0);
+      } else {
+        // 모든 처리 완료
         setPhotos(prev => [...prev, ...newPhotos]);
         setIsLoading(false);
       }
-    }
+    };
     
-    if (files.length === 0) {
+    if (totalFiles > 0) {
+      // 한 번에 10개씩 파일 처리
+      processBatch(0, 10);
+    } else {
       setIsLoading(false);
     }
   };
@@ -392,27 +404,58 @@ function App() {
     <div className="absolute inset-0 flex flex-col h-screen w-screen overflow-hidden">
       <header className="flex justify-between items-center p-0 px-5 bg-slate-800 text-white h-16 w-full z-10">
         <h1 className="text-2xl font-semibold m-0">Photo Map</h1>
-        <div className="file-upload">
-          <label htmlFor="photo-upload" className="px-4 py-2 bg-blue-500 text-white rounded cursor-pointer hover:bg-blue-600 transition-colors">
-            Upload Photos
-          </label>
-          <input
-            type="file"
-            id="photo-upload"
-            multiple
-            accept="image/*"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
+        <div className="flex gap-3">
+          <div className="file-upload">
+            <label htmlFor="directory-upload" className="px-4 py-2 bg-green-600 text-white rounded cursor-pointer hover:bg-green-700 transition-colors">
+              폴더 업로드
+            </label>
+            <input
+              type="file"
+              id="directory-upload"
+              webkitdirectory="true"
+              directory="true"
+              multiple
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+          </div>
+          <div className="file-upload">
+            <label htmlFor="photo-upload" className="px-4 py-2 bg-blue-500 text-white rounded cursor-pointer hover:bg-blue-600 transition-colors">
+              사진 업로드
+            </label>
+            <input
+              type="file"
+              id="photo-upload"
+              multiple
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+          </div>
         </div>
       </header>
       
       <main className="relative w-full h-[calc(100vh-4rem)] flex-1">
-        {isLoading && <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[1000] bg-black/70 text-white px-5 py-2.5 rounded">Processing photos...</div>}
+        {isLoading && (
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[1000] bg-black/70 text-white px-5 py-2.5 rounded max-w-md w-full">
+            <div className="flex flex-col gap-2">
+              <div className="text-center">
+                사진 처리 중... ({loadingProgress.processed}/{loadingProgress.total})
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2.5">
+                <div 
+                  className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" 
+                  style={{ width: `${loadingProgress.total ? (loadingProgress.processed / loadingProgress.total * 100) : 0}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        )}
         
         <MapContainer
-          center={[36.5, 127.8]} // Default center (South Korea)
-          zoom={7}
+          center={[36.5, 127.8]} // Center of South Korea
+          zoom={7} // Show all of South Korea
           className="h-full w-full"
           zoomControl={false} // Move zoom control to right side
         >
