@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect x="0" y="0" width="512" height="512" rx="80" fill="#2c3e50" />
+  
+  <!-- Map element -->
+  <path d="M96 128 L416 128 L416 384 L96 384 Z" fill="#3498db" opacity="0.8" />
+  <path d="M96 128 L256 192 L416 128 L416 384 L256 320 L96 384 Z" fill="#ecf0f1" opacity="0.3" />
+  
+  <!-- Map landmarks -->
+  <circle cx="180" cy="220" r="12" fill="#e74c3c" />
+  <circle cx="320" cy="260" r="12" fill="#e74c3c" />
+  <circle cx="240" cy="300" r="12" fill="#e74c3c" />
+  
+  <!-- Photo element -->
+  <rect x="160" y="170" width="80" height="80" rx="4" fill="#f1c40f" />
+  <circle cx="180" cy="190" r="8" fill="#2c3e50" />
+  <rect x="165" y="205" width="70" height="40" fill="#2c3e50" opacity="0.2" />
+  
+  <!-- Photo element 2 -->
+  <rect x="280" y="210" width="80" height="80" rx="4" transform="rotate(-10, 280, 210)" fill="#2ecc71" />
+  <circle cx="300" cy="230" r="8" transform="rotate(-10, 280, 210)" fill="#2c3e50" />
+  <rect x="285" y="245" width="70" height="40" transform="rotate(-10, 280, 210)" fill="#2c3e50" opacity="0.2" />
+  
+  <!-- Location pin -->
+  <path d="M256 100 C223 100 190 120 190 170 C190 220 256 280 256 280 C256 280 322 220 322 170 C322 120 289 100 256 100 Z" fill="#e74c3c" />
+  <circle cx="256" cy="160" r="20" fill="#ecf0f1" />
+</svg>
